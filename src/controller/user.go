@@ -1,9 +1,10 @@
 package controller
 
 import (
+	"github.com/RaymondCode/simple-demo/src/repository"
 	"github.com/gin-gonic/gin"
+	"log"
 	"net/http"
-	"sync/atomic"
 )
 
 // usersLoginInfo use map to store user info, and key is username+password for demo
@@ -37,24 +38,39 @@ func Register(c *gin.Context) {
 	password := c.Query("password")
 
 	token := username + password
-
-	if _, exist := usersLoginInfo[token]; exist {
-		c.JSON(http.StatusOK, UserLoginResponse{
-			Response: Response{StatusCode: 1, StatusMsg: "User already exist"},
-		})
-	} else {
-		atomic.AddInt64(&userIdSequence, 1)
-		newUser := User{
-			Id:   userIdSequence,
-			Name: username,
-		}
-		usersLoginInfo[token] = newUser
-		c.JSON(http.StatusOK, UserLoginResponse{
-			Response: Response{StatusCode: 0},
-			UserId:   userIdSequence,
-			Token:    username + password,
-		})
+	user := &repository.User{
+		Name:     username,
+		Password: password,
 	}
+	if err := repository.NewUserDaoInstance().CreateUser(user); err != nil {
+		log.Println("insert err")
+	}
+	c.JSON(http.StatusOK, UserLoginResponse{
+		Response: Response{StatusCode: 0},
+		UserId:   3,
+		Token:    token,
+	})
+	//hello
+	/*
+		if _, exist := usersLoginInfo[token]; exist {
+			c.JSON(http.StatusOK, UserLoginResponse{
+				Response: Response{StatusCode: 1, StatusMsg: "User already exist"},
+			})
+		} else {
+			atomic.AddInt64(&userIdSequence, 1)
+			newUser := User{
+				Id:   userIdSequence,
+				Name: username,
+			}
+			usersLoginInfo[token] = newUser
+			c.JSON(http.StatusOK, UserLoginResponse{
+				Response: Response{StatusCode: 0},
+				UserId:   userIdSequence,
+				Token:    username + password,
+			})
+		}
+
+	*/
 }
 
 func Login(c *gin.Context) {

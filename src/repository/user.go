@@ -1,6 +1,10 @@
 package repository
 
-import "sync"
+import (
+	"github.com/RaymondCode/simple-demo/src/database"
+	"log"
+	"sync"
+)
 
 type User struct {
 	Id            int64  `gorm:"column:id"`
@@ -27,4 +31,11 @@ func NewUserDaoInstance() *UserDao {
 			userDao = &UserDao{}
 		})
 	return userDao
+}
+
+func (*UserDao) CreateUser(user *User) error {
+	if err := database.MySqlDb.Create(user).Error; err != nil {
+		log.Println("insert err", err.Error())
+	}
+	return nil
 }
