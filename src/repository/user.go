@@ -2,9 +2,12 @@ package repository
 
 import (
 	"github.com/RaymondCode/simple-demo/src/database"
+	"gorm.io/gorm"
 	"log"
 	"sync"
 )
+
+var db = database.MySqlDb
 
 type User struct {
 	Id            int64  `gorm:"column:id"`
@@ -34,8 +37,22 @@ func NewUserDaoInstance() *UserDao {
 }
 
 func (*UserDao) CreateUser(user *User) error {
-	if err := database.MySqlDb.Create(user).Error; err != nil {
+	if err := db.Create(user).Error; err != nil {
 		log.Println("insert err", err.Error())
+		return err
 	}
 	return nil
+}
+
+func (*UserDao) QueryUserByName(name string) (*User, error) {
+	var user User
+	err := db.Where("name = ?", name).Find(&user).Error
+	if err == gorm.ErrRecordNotFound {
+		return nil, err
+	}
+	if err != nil {
+		log.Println("find user by name err:", err)
+		return nil, err
+	}
+	return &user, nil
 }

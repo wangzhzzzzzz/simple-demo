@@ -1,7 +1,8 @@
 package controller
 
 import (
-	"github.com/RaymondCode/simple-demo/src/repository"
+	"fmt"
+	"github.com/RaymondCode/simple-demo/src/service"
 	"github.com/gin-gonic/gin"
 	"log"
 	"net/http"
@@ -36,18 +37,15 @@ type UserResponse struct {
 func Register(c *gin.Context) {
 	username := c.Query("username")
 	password := c.Query("password")
-
+	//调用service层注册服务，返回id
 	token := username + password
-	user := &repository.User{
-		Name:     username,
-		Password: password,
-	}
-	if err := repository.NewUserDaoInstance().CreateUser(user); err != nil {
-		log.Println("insert err")
+	userId, err := service.CreateUser(username, password)
+	if err != nil {
+		log.Println("insert err", err)
 	}
 	c.JSON(http.StatusOK, UserLoginResponse{
 		Response: Response{StatusCode: 0},
-		UserId:   3,
+		UserId:   userId,
 		Token:    token,
 	})
 	//hello
@@ -77,32 +75,73 @@ func Login(c *gin.Context) {
 	username := c.Query("username")
 	password := c.Query("password")
 
-	token := username + password
-
-	if user, exist := usersLoginInfo[token]; exist {
-		c.JSON(http.StatusOK, UserLoginResponse{
-			Response: Response{StatusCode: 0},
-			UserId:   user.Id,
-			Token:    token,
-		})
-	} else {
+	token := username
+	userInfo, err := service.QueryUserInfo(username)
+	if err != nil || userInfo == nil {
+		log.Println(err)
 		c.JSON(http.StatusOK, UserLoginResponse{
 			Response: Response{StatusCode: 1, StatusMsg: "User doesn't exist"},
 		})
 	}
+	fmt.Println(userInfo.User.Password)
+	if password != userInfo.User.Password {
+		c.JSON(http.StatusOK, UserLoginResponse{
+			Response: Response{StatusCode: 1, StatusMsg: "User doesn't exist"},
+		})
+	}
+	c.JSON(http.StatusOK, UserLoginResponse{
+		Response: Response{StatusCode: 0},
+		UserId:   userInfo.User.Id,
+		Token:    token,
+	})
+
+	/*
+		if user, exist := usersLoginInfo[token]; exist {
+			c.JSON(http.StatusOK, UserLoginResponse{
+				Response: Response{StatusCode: 0},
+				UserId:   user.Id,
+				Token:    token,
+			})
+		} else {
+			c.JSON(http.StatusOK, UserLoginResponse{
+				Response: Response{StatusCode: 1, StatusMsg: "User doesn't exist"},
+			})
+		}
+	*/
 }
 
 func UserInfo(c *gin.Context) {
 	token := c.Query("token")
-
-	if user, exist := usersLoginInfo[token]; exist {
-		c.JSON(http.StatusOK, UserResponse{
-			Response: Response{StatusCode: 0},
-			User:     user,
-		})
-	} else {
-		c.JSON(http.StatusOK, UserResponse{
+	userInfo, err := service.QueryUserInfo(token)
+	if err != nil || userInfo == nil {
+		log.Println(err)
+		c.JSON(http.StatusOK, UserLoginResponse{
 			Response: Response{StatusCode: 1, StatusMsg: "User doesn't exist"},
 		})
 	}
+	user := User{
+		Id:            userInfo.User.Id,
+		Name:          userInfo.User.Name,
+		FollowCount:   userInfo.User.FollowCount,
+		FollowerCount: userInfo.User.FollowerCount,
+		IsFollow:      false,
+	}
+
+	c.JSON(http.StatusOK, UserResponse{
+		Response: Response{StatusCode: 0},
+		User:     user,
+	})
+	/*
+		if user, exist := usersLoginInfo[token]; exist {
+			c.JSON(http.StatusOK, UserResponse{
+				Response: Response{StatusCode: 0},
+				User:     user,
+			})
+		} else {
+			c.JSON(http.StatusOK, UserResponse{
+				Response: Response{StatusCode: 1, StatusMsg: "User doesn't exist"},
+			})
+		}
+
+	*/
 }

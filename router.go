@@ -5,12 +5,20 @@ import (
 	"github.com/RaymondCode/simple-demo/src/controller"
 	"github.com/gin-gonic/gin"
 	"log"
+	"path"
 )
 
 func initRouter(r *gin.Engine) {
 	// public directory is used to serve static resources
 	r.Static("/static", "./public")
-
+	r.GET("root/test/simple-demo-main/public/:name", func(c *gin.Context) {
+		name := c.Param("name")
+		//拼接路径,如果没有这一步，则默认在当前路径下寻找
+		filename := path.Join("./public/", name)
+		//响应一个文件
+		c.File(filename)
+		return
+	})
 	apiRouter := r.Group("/douyin")
 
 	// basic apis
